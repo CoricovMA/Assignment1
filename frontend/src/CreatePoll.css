@@ -15,3 +15,11 @@
     width: 200px;
     color:black;
 }
+
+.CreatePoll {
+    font-weight: bolder;
+}
+
+.choice-qty {
+    width: 50px;
+}

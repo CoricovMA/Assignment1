@@ -57,7 +57,7 @@ const CreatePoll = () => {
         <div className="CreatePoll">
             <form onSubmit={updateQty}>
                 <label htmlFor="choice-qty">Input number of choices: </label>
-                <input type="number" min="1" step="1" name="choiceQty" id="choiceQty"/>
+                <input className="choice-qty" type="number" min="1" step="1" name="choiceQty" id="choiceQty"/>
                 <button type="submit">Update</button>
             </form>
             <br/>
