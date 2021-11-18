@@ -258,7 +258,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static List<User> selectAllUsers() throws SQLException {
+    public synchronized List<User> selectAllUsers() throws SQLException {
         List<User> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLUSER_QUERY);
         try (ResultSet resultSet = statement.executeQuery()) {
@@ -281,7 +281,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static User selectUser(String userId) throws SQLException {
+    public synchronized User selectUser(String userId) throws SQLException {
         User user = null;
         PreparedStatement statement = connection.prepareStatement(SELECT_USER_QUERY);
         statement.setString(1, userId);
@@ -304,7 +304,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static List<Poll> selectAllPolls() throws SQLException {
+    public synchronized List<Poll> selectAllPolls() throws SQLException {
         List<Poll> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLPOLL_QUERY);
         try (ResultSet resultSet = statement.executeQuery()) {
@@ -327,7 +327,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Poll selectPoll(String pollId) throws SQLException {
+    public synchronized Poll selectPoll(String pollId) throws SQLException {
         Poll poll = null;
         PreparedStatement statement = connection.prepareStatement(SELECT_POLL_QUERY);
         statement.setString(1, pollId);
@@ -350,13 +350,13 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static List<Choice> selectAllChoices() throws SQLException {
+    public synchronized List<Choice> selectAllChoices() throws SQLException {
         List<Choice> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLCHOICE_QUERY);
         return getChoices(rows, statement);
     }
 
-    private static List<Choice> getChoices(List<Choice> rows, PreparedStatement statement) throws SQLException {
+    private List<Choice> getChoices(List<Choice> rows, PreparedStatement statement) throws SQLException {
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 Choice choice = setupChoice(resultSet);
@@ -377,7 +377,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Choice selectChoice(String choiceId) throws SQLException {
+    public synchronized Choice selectChoice(String choiceId) throws SQLException {
         Choice choice = null;
         PreparedStatement statement = connection.prepareStatement(SELECT_CHOICE_QUERY);
         statement.setString(1, choiceId);
@@ -401,7 +401,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static List<Choice> selectPollChoices(String pollId) throws SQLException {
+    public synchronized List<Choice> selectPollChoices(String pollId) throws SQLException {
         List<Choice> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_POLLCHOICES_QUERY);
         statement.setString(1, pollId);
@@ -414,7 +414,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static List<Vote> selectAllVotes() throws SQLException {
+    public synchronized List<Vote> selectAllVotes() throws SQLException {
         List<Vote> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLVOTE_QUERY);
         try (ResultSet resultSet = statement.executeQuery()) {
@@ -437,7 +437,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Vote selectVote(String voteId) throws SQLException {
+    public synchronized Vote selectVote(String voteId) throws SQLException {
         Vote vote = null;
         PreparedStatement statement = connection.prepareStatement(SELECT_VOTE_QUERY);
         statement.setString(1, voteId);
@@ -461,7 +461,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static User setupUser(ResultSet rs) throws SQLException {
+    public synchronized User setupUser(ResultSet rs) throws SQLException {
         User user = new User();
         user.setUserId(rs.getString("userId"));
         user.setFullName(rs.getString("name"));
@@ -477,7 +477,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Poll setupPoll(ResultSet rs) throws SQLException {
+    public synchronized Poll setupPoll(ResultSet rs) throws SQLException {
         Poll poll = new Poll();
         poll.setPollId(rs.getString("pollId"));
         poll.setPollTitle(rs.getString("title"));
@@ -492,7 +492,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Choice setupChoice(ResultSet rs) throws SQLException {
+    public synchronized Choice setupChoice(ResultSet rs) throws SQLException {
         Choice choice = new Choice();
         choice.setChoiceID(rs.getString("choiceId"));
         choice.setPollId(rs.getString("pollId"));
@@ -507,7 +507,7 @@ public class MysqlJDBC {
      * @return
      * @throws SQLException
      */
-    public synchronized static Vote setupVote(ResultSet rs) throws SQLException {
+    public synchronized Vote setupVote(ResultSet rs) throws SQLException {
         Vote vote = new Vote();
         vote.setVoteId(rs.getString("voteId"));
         vote.setPIN(rs.getString("PIN"));
