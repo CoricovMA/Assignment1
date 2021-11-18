@@ -12,6 +12,7 @@ import java.util.List;
 public class MysqlJDBC {
 
     private static Connection connection;
+    private static MysqlJDBC INSTANCE;
 
     private static final String INSERT_USER_QUERY = "INSERT INTO Users (name, email, password) values (?, ?, ?)";
     private static final String INSERT_POLL_QUERY = "INSERT INTO Polls (pollId, title, question) values (?, ?, ?)";
@@ -38,13 +39,16 @@ public class MysqlJDBC {
     private static final String SELECT_ALLVOTE_QUERY = "SELECT * FROM Vote";
     private static final String SELECT_VOTE_QUERY = "SELECT * FROM Vote WHERE voteId = ?";
 
-    public static void init() throws ClassNotFoundException, SQLException {
-        if(connection == null) {
+    public static MysqlJDBC getInstance() throws ClassNotFoundException, SQLException {
+        if(connection == null || INSTANCE == null) {
             Class.forName("com.mysql.jdbc.Driver");
             connection = DriverManager
                     .getConnection(String.format(Config.DB_STRING.value.toString(), Config.DB_PORT.value.toString())
                             , Config.DB_USERNAME.value.toString(), Config.DB_PW.value.toString());
+            INSTANCE = new MysqlJDBC();
         }
+
+        return INSTANCE;
     }
 
     /**
@@ -53,7 +57,7 @@ public class MysqlJDBC {
      * @param user
      * @throws SQLException
      */
-    public synchronized static void insertUser(User user) throws SQLException {
+    public synchronized void insertUser(User user) throws SQLException {
         //USE THIS IF YOU NEED TO ACCESS AN AUTO GENERATED ID
         PreparedStatement statement = connection.prepareStatement(INSERT_USER_QUERY, Statement.RETURN_GENERATED_KEYS);
         statement.setString(1, user.fullName);
@@ -79,7 +83,7 @@ public class MysqlJDBC {
      * @param poll
      * @throws SQLException
      */
-    public synchronized static void insertPoll(Poll poll) throws SQLException {
+    public synchronized void insertPoll(Poll poll) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(INSERT_POLL_QUERY);
         statement.setString(1, poll.getPollId());
         statement.setString(2, poll.getPollTitle());
@@ -94,7 +98,7 @@ public class MysqlJDBC {
      * @param choice
      * @throws SQLException
      */
-    public synchronized static void insertChoice(Choice choice) throws SQLException {
+    public synchronized void insertChoice(Choice choice) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(INSERT_CHOICE_QUERY, Statement.RETURN_GENERATED_KEYS);
         statement.setString(1, choice.getPollId());
         statement.setString(2, choice.getChoice());
@@ -117,7 +121,7 @@ public class MysqlJDBC {
      * @param vote
      * @throws SQLException
      */
-    public synchronized static void insertVote(Vote vote) throws SQLException {
+    public synchronized void insertVote(Vote vote) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(INSERT_VOTE_QUERY, Statement.RETURN_GENERATED_KEYS);
         statement.setString(1, vote.getPIN());
         statement.setString(2, vote.getChoiceId());
@@ -140,7 +144,7 @@ public class MysqlJDBC {
       * @param user
      * @throws SQLException
      */
-    public synchronized static void updateUser(User user) throws SQLException {
+    public synchronized void updateUser(User user) throws SQLException {
         //USE THIS IF YOU NEED TO ACCESS AN AUTO GENERATED ID
         PreparedStatement statement = connection.prepareStatement(UPDATE_USER_QUERY);
         statement.setString(1, user.fullName);
@@ -157,7 +161,7 @@ public class MysqlJDBC {
      * @param poll
      * @throws SQLException
      */
-    public synchronized static void updatePoll(Poll poll) throws SQLException {
+    public synchronized void updatePoll(Poll poll) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(UPDATE_POLL_QUERY);
         statement.setString(1, poll.getPollTitle());
         statement.setString(2, poll.getQuestionText());
@@ -172,7 +176,7 @@ public class MysqlJDBC {
      * @param choice
      * @throws SQLException
      */
-    public synchronized static void updateChoice(Choice choice) throws SQLException {
+    public synchronized void updateChoice(Choice choice) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(UPDATE_CHOICE_QUERY);
         statement.setString(1, choice.getPollId());
         statement.setString(2, choice.getChoice());
@@ -187,7 +191,7 @@ public class MysqlJDBC {
      * @param vote
      * @throws SQLException
      */
-    public synchronized static void updateVote(Vote vote) throws SQLException {
+    public synchronized void updateVote(Vote vote) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(UPDATE_VOTE_QUERY);
         statement.setString(1, vote.getPIN());
         statement.setString(2, vote.getChoiceId());
@@ -202,7 +206,7 @@ public class MysqlJDBC {
      * @param userId
      * @throws SQLException
      */
-    public synchronized static void deleteUser(String userId) throws SQLException {
+    public synchronized void deleteUser(String userId) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(DELETE_USER_QUERY);
         statement.setString(1, userId);
         statement.executeUpdate();
@@ -215,7 +219,7 @@ public class MysqlJDBC {
      * @param pollId
      * @throws SQLException
      */
-    public synchronized static void deletePoll(String pollId) throws SQLException {
+    public synchronized void deletePoll(String pollId) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(DELETE_POLL_QUERY);
         statement.setString(1, pollId);
         statement.executeUpdate();
@@ -228,7 +232,7 @@ public class MysqlJDBC {
      * @param choiceId
      * @throws SQLException
      */
-    public synchronized static void deleteChoice(String choiceId) throws SQLException {
+    public synchronized void deleteChoice(String choiceId) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(DELETE_CHOICE_QUERY);
         statement.setString(1, choiceId);
         statement.executeUpdate();
@@ -241,7 +245,7 @@ public class MysqlJDBC {
      * @param voteId
      * @throws SQLException
      */
-    public synchronized static void deleteVote(String voteId) throws SQLException {
+    public synchronized void deleteVote(String voteId) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(DELETE_VOTE_QUERY);
         statement.setString(1, voteId);
         statement.executeUpdate();
@@ -349,6 +353,10 @@ public class MysqlJDBC {
     public synchronized static List<Choice> selectAllChoices() throws SQLException {
         List<Choice> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLCHOICE_QUERY);
+        return getChoices(rows, statement);
+    }
+
+    private static List<Choice> getChoices(List<Choice> rows, PreparedStatement statement) throws SQLException {
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 Choice choice = setupChoice(resultSet);
@@ -397,17 +405,7 @@ public class MysqlJDBC {
         List<Choice> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_POLLCHOICES_QUERY);
         statement.setString(1, pollId);
-        try (ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                Choice choice = setupChoice(resultSet);
-                rows.add(choice);
-            }
-        } catch (SQLException ex) {
-            System.out.println("Exception: " + ex);
-            throw ex;
-        }
-        statement.close();
-        return rows;
+        return getChoices(rows, statement);
     }
 
     /**
