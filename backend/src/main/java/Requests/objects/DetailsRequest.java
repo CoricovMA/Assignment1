@@ -6,6 +6,7 @@ import Users.PollManager;
 import org.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
 
 
 /**
@@ -31,25 +32,24 @@ public class DetailsRequest extends AbstractRequest implements Request {
                 : getRequest().getAttribute("extension").toString();
         toReturn.addHeader("Content-disposition", String.format("attachment; filename=%s-%d%s", pollTitle, PollManager.getPollReleasedTimestamp(), extension));
         String choice = this.getRequest().getParameter("choice");
-
+        String pollId = this.getRequest().getParameter("pollId");
         try{
             if (choice.equals("JSON")) {
-                JSONObject obj = PollManager.downloadJSonPollDetails();
+                JSONObject obj = PollManager.downloadJSonPollDetails(pollId);
                 toReturn.setBody(obj.toString(2)); // For use with JSON
             }
             else if (choice.equals("TEXT")){
-                String str = PollManager.downloadStringPollDetails();
+                String str = PollManager.downloadStringPollDetails(pollId);
                 toReturn.setBody(str);
             }
             else{
-                String xml = PollManager.downloadXMLPollDetails();
+                String xml = PollManager.downloadXMLPollDetails(pollId);
                 toReturn.setBody(xml);
             }
             return toReturn;
-        } catch (AssignmentException e) {
+        } catch (AssignmentException | SQLException | ClassNotFoundException  e) {
 
             return new Response().serverError().exceptionBody(e);
         }
-
     }
 }

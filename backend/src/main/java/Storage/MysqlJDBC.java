@@ -1,13 +1,17 @@
 package Storage;
 
+import Exceptions.PollIsNotReleasedException;
 import Polls.Poll;
 import Storage.Entities.Choice;
 import Storage.Entities.Vote;
 import Users.User;
+import org.json.JSONObject;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MysqlJDBC {
 
@@ -90,6 +94,42 @@ public class MysqlJDBC {
         statement.setString(3, poll.getQuestionText());
         statement.executeUpdate();
         statement.close();
+    }
+
+    public synchronized Map<String, Long> getPollResults(String pollId) throws SQLException {
+       List<Choice> choicesForPoll = this.selectPollChoices(pollId);
+
+       return choicesForPoll.stream().collect(Collectors.groupingBy(Choice::getChoice, Collectors.counting() ));
+    }
+
+    public synchronized JSONObject getPollDetailsAsJson(String pollId) throws SQLException, PollIsNotReleasedException {
+        Poll pollToCheck = this.selectPoll(pollId);
+        if(pollToCheck.getStatus() == Poll.POLL_STATUS.RELEASED){
+            JSONObject detailsJson = new JSONObject();
+            detailsJson.put("state", pollToCheck.getState());
+            detailsJson.put("votes", this.getPollResults(pollId));
+            return detailsJson;
+        }
+        throw new PollIsNotReleasedException();
+    }
+
+    public synchronized String getPollDetailsAsString(String pollId) throws SQLException, PollIsNotReleasedException {
+        Poll pollToCheck = this.selectPoll(pollId);
+        if(pollToCheck.getStatus() == Poll.POLL_STATUS.RELEASED){
+            StringBuilder sb = new StringBuilder();
+
+            Map<String, Object> pollState = pollToCheck.getState();
+            Map<String, Long> results = this.getPollResults(pollId);
+
+            sb.append("Title: ").append(pollState.get("title")).append("\n");
+            sb.append("Question: ").append(pollState.get("question")).append("\n");
+            sb.append("State: ").append(pollState.get("state")).append("\n");
+            sb.append("Choices: ").append(pollState.get("choices")).append("\n");
+            sb.append("Voted: ").append(results.toString());
+            return sb.toString();
+
+        }
+        throw new PollIsNotReleasedException();
     }
 
     /**
@@ -482,6 +522,7 @@ public class MysqlJDBC {
         poll.setPollId(rs.getString("pollId"));
         poll.setPollTitle(rs.getString("title"));
         poll.setQuestionText(rs.getString("question"));
+        poll.setPollStatus(rs.getString("pollStatus"));
         return poll;
     }
 

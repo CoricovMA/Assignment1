@@ -43,7 +43,7 @@ public class RequestFactory {
     public static Request valueOfGetRequest(HttpServletRequest request){
         switch (getRequestTypeFromServletRequest(request)){
             case RESULTS:
-                return new ResultsRequest();
+                return new ResultsRequest(request);
             case DETAILS:
                 return new DetailsRequest(request);
             case STATE:

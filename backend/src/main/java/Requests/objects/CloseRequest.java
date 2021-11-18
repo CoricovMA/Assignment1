@@ -5,6 +5,7 @@ import Responses.Response;
 import Users.PollManager;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
 
 public class CloseRequest extends AbstractRequest implements Request {
 
@@ -22,11 +23,11 @@ public class CloseRequest extends AbstractRequest implements Request {
 
         try {
 
-            PollManager.closePoll();
+            PollManager.closePoll(this.getPollId());
 
             return new Response().ok();
 
-        } catch (AssignmentException e) {
+        } catch (AssignmentException | SQLException | ClassNotFoundException e) {
 
             return new Response().serverError().exceptionBody(e);
         }

@@ -12,10 +12,12 @@ public abstract class AbstractRequest {
 
     private final HttpSession httpSession;
     private final HttpServletRequest request;
+    private String pollId;
 
     AbstractRequest(HttpServletRequest request){
         this.httpSession = request.getSession();
         this.request = request;
+        this.pollId = request.getParameter("pollId");
     }
 
     public Optional<HttpSession> getHttpSession(){
@@ -28,5 +30,9 @@ public abstract class AbstractRequest {
 
     public HttpServletRequest getRequest(){
         return this.request;
+    }
+
+    public String getPollId(){
+        return this.pollId;
     }
 }

@@ -1,5 +1,7 @@
 package Polls;
 
+import Exceptions.AssignmentException;
+import Exceptions.InvalidPollStateException;
 import Util.StringHelper;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.BasicDBObject;
@@ -7,11 +9,29 @@ import com.mongodb.DBObject;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class Poll implements Serializable {
 
+    public enum POLL_STATUS {
+        CREATED("created"),
+        RUNNING("running"),
+        RELEASED("released"),
+        CLOSED("closed");
+
+        private final String value;
+
+        POLL_STATUS(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
 
     @JsonProperty("name")
     private String pollTitle;
@@ -25,7 +45,11 @@ public class Poll implements Serializable {
     @JsonProperty("id")
     private String pollId;
 
+    @JsonProperty("pollStatus")
+    private POLL_STATUS pollStatus;
+
     public Poll(){
+        this.pollStatus = POLL_STATUS.CREATED;
     }
 
     public Poll(String name, String question, List<String> choices) {
@@ -33,6 +57,7 @@ public class Poll implements Serializable {
         this.pollTitle = name;
         this.questionText = question;
         this.pollId = StringHelper.randomID();
+        this.pollStatus = POLL_STATUS.CREATED;
     }
 
     public String getPollTitle() {
@@ -67,13 +92,16 @@ public class Poll implements Serializable {
         this.pollId = pollId;
     }
 
-    // could use an object mapper, but it would be longer in terms of mapping than simply creating a json object (imo)
-    public BasicDBObject asDBObject(){
-        return new BasicDBObject()
-                .append("name", this.pollTitle)
-                .append("question", this.questionText)
-                .append("choices", this.choicesList)
-                .append("pollId", this.pollId);
+    public POLL_STATUS getStatus() {
+        return pollStatus;
+    }
+
+    public void setPollStatus(String status){
+        this.pollStatus = POLL_STATUS.valueOf(status.toUpperCase());
+    }
+
+    public void setPollStatus(POLL_STATUS status){
+        this.pollStatus = status;
     }
 
     // it is a good practice to implement equals and hash when implementing serializable
@@ -92,4 +120,35 @@ public class Poll implements Serializable {
     public int hashCode() {
         return Objects.hash(pollTitle, questionText, choicesList, pollId);
     }
+
+    /**
+     * Helper method which throws an exception if the current status is invalid.
+     * @param wantedStatus given wanted status, throws an error if current status != wanted stats
+     * @param triedAction action which was tried and invalid in current state
+     * @throws AssignmentException
+     */
+    public void checkPollState(POLL_STATUS wantedStatus, String triedAction) throws AssignmentException{
+        if(this.pollStatus != wantedStatus)
+            throw new InvalidPollStateException(this.pollStatus.value, triedAction);
+    }
+
+    /**
+     * Returns the current state of the poll, more of a helper method for populating the frontend
+     * @return
+     */
+    public Map<String, Object> getState() {
+        Map<String, Object> mapToReturn = new HashMap<>();
+
+        if (this.pollStatus != null) {
+            mapToReturn.put("choices", this.getChoicesList());
+            mapToReturn.put("question", this.getQuestionText());
+            mapToReturn.put("title", this.getPollTitle());
+        }
+
+        mapToReturn.put("state", Objects.requireNonNull(this.pollStatus).value);
+
+        return mapToReturn;
+    }
+
+
 }

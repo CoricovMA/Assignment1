@@ -11,12 +11,13 @@ public class AccessRequest extends AbstractRequest implements Request {
     }
 
     /**
-     * Implementation of the Access request. Sets the poll status to running.
+     * Implementation of the Access request.
      * @return Response object containing body and status request.
      */
     @Override
     public Response call() {
         try {
+
             /** IMPLEMENTATION:
              *
              * Endpoint: http://localhost:8080/access
