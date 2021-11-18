@@ -1,7 +1,6 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.AssignmentException;
-import Exceptions.InvalidChoiceException;
 import Exceptions.InvalidSessionException;
 import Responses.Response;
 import Users.PollManager;
@@ -11,7 +10,7 @@ import javax.servlet.http.HttpSession;
 
 public class VoteRequest extends AbstractRequest implements Request {
 
-    VoteRequest(HttpServletRequest servletRequest){
+    public VoteRequest(HttpServletRequest servletRequest){
         super(servletRequest);
     };
 

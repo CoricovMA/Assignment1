@@ -1,36 +1,29 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.AssignmentException;
-import Exceptions.InvalidPollStateException;
 import Responses.Response;
 import Users.PollManager;
 
 import javax.servlet.http.HttpServletRequest;
 
-public class CloseRequest extends AbstractRequest implements Request {
+public class RunRequest extends AbstractRequest implements Request {
 
-    CloseRequest(HttpServletRequest request){
+    public RunRequest(HttpServletRequest request){
         super(request);
     };
 
-
     /**
-     * Implementation of the Close request. Closes the poll
+     * Implementation of the Run request. Sets the poll status to running.
      * @return Response object containing body and status request.
      */
     @Override
     public Response call() {
-
         try {
-
-            PollManager.closePoll();
-
+            PollManager.runPoll();
             return new Response().ok();
-
         } catch (AssignmentException e) {
-
-            return new Response().serverError().exceptionBody(e);
+            return new Response().badRequest().exceptionBody(e);
         }
-
     }
+
 }

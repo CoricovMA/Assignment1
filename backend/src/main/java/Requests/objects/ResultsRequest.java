@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import Responses.Response;
 import Users.PollManager;
@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class ResultsRequest implements Request {
 
-    ResultsRequest(){};
+    public ResultsRequest(){};
 
     /**
      * Implementation of the Results request. Returns the results of the poll

@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.AssignmentException;
 import Polls.Poll;
@@ -20,7 +20,7 @@ public class CreateRequest extends AbstractRequest implements Request {
     private static final ObjectMapper mapper = new ObjectMapper();
     private Poll poll;
 
-    CreateRequest(HttpServletRequest request){
+    public CreateRequest(HttpServletRequest request){
         super(request);
 
     };

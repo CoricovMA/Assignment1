@@ -1,25 +1,24 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.AssignmentException;
-import Exceptions.InvalidPollStateException;
 import Responses.Response;
 import Users.PollManager;
 
-public class UnreleaseRequest implements Request {
+public class ReleaseRequest implements Request {
 
-    UnreleaseRequest(){};
+    public ReleaseRequest(){};
 
     /**
-     * Implementation of the Unrelease request. Unreleases the poll
+     * Implementation of the Release request. Sets the poll status to released
      * @return Response object containing body and status request.
      */
     @Override
     public Response call() {
         try {
-            PollManager.unreleasePoll();
+            PollManager.releasePoll();
             return new Response().ok();
         } catch (AssignmentException e) {
-            return new Response().badRequest().exceptionBody(e);
+            return new Response().serverError().exceptionBody(e);
         }
     }
 }

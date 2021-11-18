@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.InvalidPollStateException;
 import Responses.Response;
@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 
 public class ClearRequest extends AbstractRequest implements Request {
 
-    ClearRequest(HttpServletRequest request){
+    public ClearRequest(HttpServletRequest request){
         super(request);
     }
 

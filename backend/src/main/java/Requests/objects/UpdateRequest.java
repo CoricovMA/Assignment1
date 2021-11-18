@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.InvalidPollStateException;
 import Polls.Poll;
@@ -14,7 +14,7 @@ public class UpdateRequest extends AbstractRequest implements Request {
     private static final ObjectMapper mapper = new ObjectMapper();
     private Poll poll;
 
-    UpdateRequest(HttpServletRequest request){
+    public UpdateRequest(HttpServletRequest request){
         super(request);
     }
 

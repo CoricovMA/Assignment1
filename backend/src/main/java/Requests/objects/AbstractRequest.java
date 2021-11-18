@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;

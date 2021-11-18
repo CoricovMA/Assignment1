@@ -1,4 +1,4 @@
-package Requests;
+package Requests.objects;
 
 import Exceptions.AssignmentException;
 import Responses.Response;
@@ -6,8 +6,6 @@ import Users.PollManager;
 import org.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
 
 
 /**
@@ -15,7 +13,7 @@ import java.io.PrintWriter;
  */
 public class DetailsRequest extends AbstractRequest implements Request {
 
-    DetailsRequest(HttpServletRequest request){
+    public DetailsRequest(HttpServletRequest request){
         super(request);
     };
 

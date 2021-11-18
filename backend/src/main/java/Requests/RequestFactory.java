@@ -1,5 +1,7 @@
 package Requests;
 
+import Requests.objects.*;
+
 import javax.naming.NoPermissionException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,7 +29,8 @@ public class RequestFactory {
         CREATE,
         UPDATE,
         RUN,
-        STATE
+        STATE,
+        ACCESS
     }
 
     /**
@@ -65,6 +68,8 @@ public class RequestFactory {
                 return new DetailsRequest(request);
             case CREATE:
                 return new CreateRequest(request);
+            case ACCESS:
+                return new AccessRequest(request);
             default:
                 return new InvalidRequest(400);
         }
