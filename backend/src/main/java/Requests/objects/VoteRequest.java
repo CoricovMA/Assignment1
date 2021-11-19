@@ -7,6 +7,7 @@ import Users.PollManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.sql.SQLException;
 
 public class VoteRequest extends AbstractRequest implements Request {
 
@@ -31,10 +32,11 @@ public class VoteRequest extends AbstractRequest implements Request {
         try {
             HttpSession session = this.getHttpSession().orElseThrow(InvalidSessionException::new);
             String choice = this.getRequest().getParameter("choice");
-            PollManager.vote(session, choice);
+            String pin = this.getRequest().getParameter("pin");
+            PollManager.vote(session, choice, pin, getPollId());
             return new Response().ok();
 
-        } catch (AssignmentException e) {
+        } catch (AssignmentException | SQLException | ClassNotFoundException e) {
             return new Response().serverError().exceptionBody(e);
         }
     }

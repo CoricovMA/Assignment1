@@ -2,6 +2,8 @@ package Polls;
 
 import Exceptions.AssignmentException;
 import Exceptions.InvalidPollStateException;
+import Storage.Entities.Vote;
+import Storage.MysqlJDBC;
 import Util.StringHelper;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.BasicDBObject;
@@ -9,10 +11,14 @@ import com.mongodb.DBObject;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.counting;
 
 public class Poll implements Serializable {
 
@@ -45,7 +51,6 @@ public class Poll implements Serializable {
     @JsonProperty("id")
     private String pollId;
 
-    @JsonProperty("pollStatus")
     private POLL_STATUS pollStatus;
 
     public Poll(){
@@ -58,6 +63,12 @@ public class Poll implements Serializable {
         this.questionText = question;
         this.pollId = StringHelper.randomID();
         this.pollStatus = POLL_STATUS.CREATED;
+    }
+
+    public void verifyId(){
+        if (pollId == null){
+            this.pollId = StringHelper.randomID();
+        }
     }
 
     public String getPollTitle() {
@@ -136,13 +147,18 @@ public class Poll implements Serializable {
      * Returns the current state of the poll, more of a helper method for populating the frontend
      * @return
      */
-    public Map<String, Object> getState() {
+    public Map<String, Object> getState() throws SQLException, ClassNotFoundException {
         Map<String, Object> mapToReturn = new HashMap<>();
 
+        Map<String, Long> mapOfPins = MysqlJDBC.getInstance()
+                .selectAllVotesFromPoll(this.pollId)
+                .stream().collect(Collectors.groupingBy(Vote::getPIN, Collectors.counting()));
+
         if (this.pollStatus != null) {
-            mapToReturn.put("choices", this.getChoicesList());
+            mapToReturn.put("id", this.getPollId());
             mapToReturn.put("question", this.getQuestionText());
             mapToReturn.put("title", this.getPollTitle());
+            mapToReturn.put("pins", mapOfPins);
         }
 
         mapToReturn.put("state", Objects.requireNonNull(this.pollStatus).value);

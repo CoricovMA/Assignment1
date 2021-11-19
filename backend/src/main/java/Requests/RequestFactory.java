@@ -47,7 +47,7 @@ public class RequestFactory {
             case DETAILS:
                 return new DetailsRequest(request);
             case STATE:
-                return new GetStateRequest();
+                return new GetStateRequest(request);
             default:
                 return new InvalidRequest(400);
         }
@@ -85,9 +85,9 @@ public class RequestFactory {
     public static Request valueOfPutRequest(HttpServletRequest request){
         switch (getRequestTypeFromServletRequest(request)){
             case RELEASE:
-                return new ReleaseRequest();
+                return new ReleaseRequest(request);
             case UNRELEASE:
-                return new UnreleaseRequest();
+                return new UnreleaseRequest(request);
             case CLEAR:
                 return new ClearRequest(request);
             case CLOSE:

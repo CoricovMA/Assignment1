@@ -1,5 +1,6 @@
 package Storage;
 
+import Exceptions.AssignmentException;
 import Exceptions.PollIsNotReleasedException;
 import Polls.Poll;
 import Storage.Entities.Choice;
@@ -31,6 +32,7 @@ public class MysqlJDBC {
     private static final String DELETE_USER_QUERY = "DELETE FROM Users WHERE userId = ?";
     private static final String DELETE_POLL_QUERY = "DELETE FROM Polls WHERE pollId = ?";
     private static final String DELETE_CHOICE_QUERY = "DELETE FROM Choices WHERE choiceId = ?";
+    private static final String DELETE_ALL_VOTES_QUERY = "DELETE FROM Vote WHERE pollId = ?";
     private static final String DELETE_VOTE_QUERY = "DELETE FROM Vote WHERE voteId = ?";
 
     private static final String SELECT_ALLUSER_QUERY = "SELECT * FROM Users";
@@ -42,6 +44,8 @@ public class MysqlJDBC {
     private static final String SELECT_POLLCHOICES_QUERY = "SELECT * FROM Choices WHERE pollId = ?";
     private static final String SELECT_ALLVOTE_QUERY = "SELECT * FROM Vote";
     private static final String SELECT_VOTE_QUERY = "SELECT * FROM Vote WHERE voteId = ?";
+    private static final String SELECT_ALL_VOTES_FROM_POLL = "SELECT * FROM Vote WHERE pollId = ?";
+
 
     public static MysqlJDBC getInstance() throws ClassNotFoundException, SQLException {
         if(connection == null || INSTANCE == null) {
@@ -102,7 +106,7 @@ public class MysqlJDBC {
        return choicesForPoll.stream().collect(Collectors.groupingBy(Choice::getChoice, Collectors.counting() ));
     }
 
-    public synchronized JSONObject getPollDetailsAsJson(String pollId) throws SQLException, PollIsNotReleasedException {
+    public synchronized JSONObject getPollDetailsAsJson(String pollId) throws SQLException, PollIsNotReleasedException, ClassNotFoundException {
         Poll pollToCheck = this.selectPoll(pollId);
         if(pollToCheck.getStatus() == Poll.POLL_STATUS.RELEASED){
             JSONObject detailsJson = new JSONObject();
@@ -113,7 +117,7 @@ public class MysqlJDBC {
         throw new PollIsNotReleasedException();
     }
 
-    public synchronized String getPollDetailsAsString(String pollId) throws SQLException, PollIsNotReleasedException {
+    public synchronized String getPollDetailsAsString(String pollId) throws SQLException, PollIsNotReleasedException, ClassNotFoundException {
         Poll pollToCheck = this.selectPoll(pollId);
         if(pollToCheck.getStatus() == Poll.POLL_STATUS.RELEASED){
             StringBuilder sb = new StringBuilder();
@@ -266,6 +270,13 @@ public class MysqlJDBC {
         statement.close();
     }
 
+    public synchronized void deleteAllVotesFromPoll(String pollId) throws SQLException{
+        PreparedStatement statement = connection.prepareStatement(DELETE_ALL_VOTES_QUERY);
+        statement.setString(1, pollId);
+        statement.executeUpdate();
+        statement.close();
+    }
+
     /**
      * Method responsible for deleting a choice in the database.
      *
@@ -358,6 +369,16 @@ public class MysqlJDBC {
         }
         statement.close();
         return rows;
+    }
+
+    public synchronized void updatePollStatus(String pollId,
+                                        Poll.POLL_STATUS statusToSet,
+                                        Poll.POLL_STATUS statusToCheck,
+                                        String triedAction) throws SQLException, ClassNotFoundException, AssignmentException {
+        Poll pollToCheck = getInstance().selectPoll(pollId);
+        pollToCheck.checkPollState(statusToCheck, triedAction);
+        pollToCheck.setPollStatus(statusToSet);
+        MysqlJDBC.getInstance().updatePoll(pollToCheck);
     }
 
     /**
@@ -457,6 +478,23 @@ public class MysqlJDBC {
     public synchronized List<Vote> selectAllVotes() throws SQLException {
         List<Vote> rows = new ArrayList<>();
         PreparedStatement statement = connection.prepareStatement(SELECT_ALLVOTE_QUERY);
+        try (ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                Vote vote = setupVote(resultSet);
+                rows.add(vote);
+            }
+        } catch (SQLException ex) {
+            System.out.println("Exception: " + ex);
+            throw ex;
+        }
+        statement.close();
+        return rows;
+    }
+
+    public synchronized List<Vote> selectAllVotesFromPoll(String pollId) throws SQLException {
+        List<Vote> rows = new ArrayList<>();
+        PreparedStatement statement = connection.prepareStatement(SELECT_ALL_VOTES_FROM_POLL);
+        statement.setString(1, pollId);
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 Vote vote = setupVote(resultSet);

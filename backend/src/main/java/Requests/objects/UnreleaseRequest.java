@@ -4,9 +4,14 @@ import Exceptions.AssignmentException;
 import Responses.Response;
 import Users.PollManager;
 
-public class UnreleaseRequest implements Request {
+import javax.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
 
-    public UnreleaseRequest(){};
+public class UnreleaseRequest extends AbstractRequest implements Request {
+
+    public UnreleaseRequest(HttpServletRequest request){
+        super(request);
+    };
 
     /**
      * Implementation of the Unrelease request. Unreleases the poll
@@ -15,9 +20,9 @@ public class UnreleaseRequest implements Request {
     @Override
     public Response call() {
         try {
-            PollManager.unreleasePoll();
+            PollManager.unreleasePoll(this.getPollId());
             return new Response().ok();
-        } catch (AssignmentException e) {
+        } catch (AssignmentException | SQLException | ClassNotFoundException e) {
             return new Response().badRequest().exceptionBody(e);
         }
     }

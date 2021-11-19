@@ -3,9 +3,11 @@ package Users;
 import Exceptions.*;
 import Polls.Poll;
 import Storage.Entities.Choice;
+import Storage.Entities.Vote;
 import Storage.MysqlJDBC;
 import Util.SessionManager;
 import Util.StringHelper;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.json.JSONObject;
 import org.json.XML;
 
@@ -16,24 +18,14 @@ import java.util.stream.Collectors;
 
 public class PollManager {
 
-
-
-    // key would be unique identifier (sessionId, wtv) and value would be the vote choice
-    private static final Map<String, String> submittedVotes = new HashMap<>();  //submitted votes, session id as key
-    private static final Map<String, Integer> voteCount = new HashMap<>();      // count of different votes
-    private static Poll pollInstance;
-    private static long pollReleasedTimestamp;
-
-    public synchronized static void createPoll(String name, String question, List<String> choices)
+    public synchronized static void createPoll(Poll pollToInsert)
             throws SQLException, ClassNotFoundException {
-        Poll pollToInsert = new Poll(name, question, choices);
-
-        List<Choice> choiceList = choices
+        List<Choice> choiceList = pollToInsert.getChoicesList()
                 .stream()
                 .map(choice -> new Choice(StringHelper.randomPin() ,pollToInsert.getPollId(),choice))
                 .collect(Collectors.toList());
 
-        MysqlJDBC.getInstance().insertPoll(new Poll(name, question, choices));
+        MysqlJDBC.getInstance().insertPoll(pollToInsert);
 
         for(Choice choice: choiceList){
             MysqlJDBC.getInstance().insertChoice(choice);
@@ -41,15 +33,18 @@ public class PollManager {
 
     }
 
-    public synchronized static void updatePoll(String name, String question, List<String> choices, String pollId) throws InvalidPollStateException {
+    public synchronized static void updatePoll(String name, String question, List<String> choices, String pollId) throws InvalidPollStateException, SQLException, ClassNotFoundException {
         // can only update a poll if it's already running
-        if (pollInstance == null || (currentStatus != POLL_STATUS.CREATED && currentStatus != POLL_STATUS.RUNNING))
-            throw new InvalidPollStateException(currentStatus.value, "update");
+        Poll pollInstance = MysqlJDBC.getInstance().selectPoll(pollId);
+        if (pollInstance == null || (pollInstance.getStatus() != Poll.POLL_STATUS.CREATED
+                && pollInstance.getStatus() != Poll.POLL_STATUS.RUNNING))
+            throw new InvalidPollStateException(Objects.requireNonNull(pollInstance).getStatus().getValue(), "update");
 
-        pollInstance = new Poll(name, question, choices);
-        currentStatus = POLL_STATUS.CREATED;
-        clearChoices();
-        addChoices(choices);
+        pollInstance.setPollStatus(Poll.POLL_STATUS.CREATED);
+        pollInstance.setPollTitle(name);
+        pollInstance.setQuestionText(question);
+        pollInstance.setChoicesList(choices);
+        MysqlJDBC.getInstance().deleteAllVotesFromPoll(pollId);
     }
 
     /**
@@ -57,57 +52,48 @@ public class PollManager {
      * Else, it throws invalid state exceptions
      * @throws InvalidPollStateException
      */
-    public synchronized static void clearPoll() throws InvalidPollStateException {
-        if (pollInstance == null)
-            throw new InvalidPollStateException("null", "close");
-
-        if (currentStatus != POLL_STATUS.RELEASED && currentStatus != POLL_STATUS.RUNNING)
-            throw new InvalidPollStateException(currentStatus.value, "clear");
+    public synchronized static void clearPoll(String pollId) throws InvalidPollStateException, SQLException, ClassNotFoundException {
+        Poll pollToCheck = MysqlJDBC.getInstance().selectPoll(pollId);
+        Poll.POLL_STATUS currentStatus = pollToCheck.getStatus();
+        if (currentStatus !=  Poll.POLL_STATUS.RELEASED && currentStatus !=  Poll.POLL_STATUS.RUNNING)
+            throw new InvalidPollStateException(currentStatus.getValue(), "clear");
 
         if (currentStatus == Poll.POLL_STATUS.RELEASED) {
-            clearChoices();
-            currentStatus = Poll.POLL_STATUS.CREATED;
+            MysqlJDBC.getInstance().deleteAllVotesFromPoll(pollId);
+            pollToCheck.setChoicesList(new ArrayList<>());
+            pollToCheck.setPollStatus(Poll.POLL_STATUS.CREATED);
+            MysqlJDBC.getInstance().updatePoll(pollToCheck);
         } else {
-            clearChoices();
+            MysqlJDBC.getInstance().deleteAllVotesFromPoll(pollId);
         }
     }
 
     public synchronized static void closePoll(String pollId) throws AssignmentException, SQLException, ClassNotFoundException {
-        Poll pollToCheck = MysqlJDBC.getInstance().selectPoll(pollId);
-        pollToCheck.checkPollState(Poll.POLL_STATUS.RELEASED, "close");
-        pollToCheck.setPollStatus(Poll.POLL_STATUS.CLOSED);
-        MysqlJDBC.getInstance().updatePoll(pollToCheck);
+        MysqlJDBC.getInstance().updatePollStatus(pollId,
+                Poll.POLL_STATUS.CLOSED,
+                Poll.POLL_STATUS.RELEASED,
+                "close");
     }
 
     public synchronized static void runPoll(String pollId) throws AssignmentException, SQLException, ClassNotFoundException {
-        Poll pollToCheck = MysqlJDBC.getInstance().selectPoll(pollId);
-        pollToCheck.checkPollState(Poll.POLL_STATUS.CREATED, "run");
-        pollToCheck.setPollStatus(Poll.POLL_STATUS.RUNNING);
-        MysqlJDBC.getInstance().updatePoll(pollToCheck);
+        MysqlJDBC.getInstance().updatePollStatus(pollId,
+                Poll.POLL_STATUS.RUNNING,
+                Poll.POLL_STATUS.CREATED,
+                "run");
     }
 
-    public synchronized static void releasePoll(String pollId) throws AssignmentException {
-        pollReleasedTimestamp = System.currentTimeMillis();
-        
-
-        checkPollState(POLL_STATUS.RUNNING, "release");
-
-        currentStatus = POLL_STATUS.RELEASED;
+    public synchronized static void releasePoll(String pollId) throws AssignmentException, SQLException, ClassNotFoundException {
+        MysqlJDBC.getInstance().updatePollStatus(pollId,
+                Poll.POLL_STATUS.RELEASED,
+                Poll.POLL_STATUS.RUNNING,
+                "release");
     }
 
-    public synchronized static void unreleasePoll() throws AssignmentException {
-        checkPollState(POLL_STATUS.RELEASED, "unrelease");
-
-        currentStatus = POLL_STATUS.RUNNING;
-    }
-
-
-
-    public static String getPollId() {
-        if (pollInstance != null) {
-            return pollInstance.getPollId();
-        }
-        return "";
+    public synchronized static void unreleasePoll(String pollId) throws AssignmentException, SQLException, ClassNotFoundException {
+        MysqlJDBC.getInstance().updatePollStatus(pollId,
+                Poll.POLL_STATUS.RUNNING,
+                Poll.POLL_STATUS.RELEASED,
+                "unrelease");
     }
 
     /**
@@ -116,19 +102,13 @@ public class PollManager {
      * @param choice given choice fromm the participant
      * @throws AssignmentException
      */
-    public synchronized static void vote(HttpSession httpSession, String choice, String pollId, String votePin) throws AssignmentException {
-        if (choice.isBlank() || choice.isEmpty() || !PollManager.validateChoice(choice))
+    public synchronized static void vote(HttpSession httpSession, String choice, String pin, String pollId ) throws AssignmentException, SQLException, ClassNotFoundException {
+        if (choice.isBlank() || choice.isEmpty() || !PollManager.validateChoice(choice, pollId))
             throw new InvalidChoiceException();
 
-        checkPollState(POLL_STATUS.RUNNING, "vote");
+        Poll pollToVote = MysqlJDBC.getInstance().selectPoll(pollId);
+        pollToVote.checkPollState(Poll.POLL_STATUS.RUNNING, "vote");
 
-        if (submittedVotes.containsKey(httpSession.getId()))
-            changeVote(httpSession, choice);
-        else
-            voteCount.put(choice, voteCount.get(choice) + 1);
-
-        submittedVotes.put(httpSession.getId(), choice);
-        SessionManager.vote(httpSession, choice);
     }
 
     /**
@@ -151,8 +131,8 @@ public class PollManager {
         return XML.toString(MysqlJDBC.getInstance().getPollDetailsAsJson(pollId));
     }
 
-    public static Optional<String> getPollTitle() {
-        return Optional.of(pollInstance.getPollTitle());
+    public static Optional<String> getPollTitle(String pollId) throws SQLException, ClassNotFoundException {
+        return Optional.of(MysqlJDBC.getInstance().selectPoll(pollId).getPollTitle());
     }
 
     /**
@@ -161,41 +141,27 @@ public class PollManager {
      * @return
      * @throws InvalidPollStateException
      */
-    public synchronized static boolean validateChoice(String choice) throws InvalidPollStateException {
+    public synchronized static boolean validateChoice(String choice, String pollId) throws InvalidPollStateException, SQLException, ClassNotFoundException {
+        Poll pollInstance = MysqlJDBC.getInstance().selectPoll(pollId);
         if (pollInstance == null)
             throw new InvalidPollStateException("none", "vote");
         return pollInstance.getChoicesList().contains(choice);
     }
 
-    public static long getPollReleasedTimestamp() {
-        return pollReleasedTimestamp;
+//    /**
+//     * Changes the vote of a participant who already voted.
+//     * @param httpSession given HttpSession from the servlet
+//     * @param choice choice
+//     */
+//    private static void changeVote(HttpSession httpSession, Vote vote) {
+//        if(httpSession.getAttribute("userId") != null){
+//
+//        }
+//        JSONObject oldChoice = httpSession.getAttribute("vote").toString();
+//
+//    }
+
+    public static Map<String, Object> getState(String pollId) throws SQLException, ClassNotFoundException {
+        return MysqlJDBC.getInstance().selectPoll(pollId).getState();
     }
-
-    private synchronized static void clearChoices() {
-        submittedVotes.clear();
-        voteCount.clear();
-    }
-
-    /**
-     * Changes the vote of a participant who already voted.
-     * @param httpSession given HttpSession from the servlet
-     * @param choice choice
-     */
-    private static void changeVote(HttpSession httpSession, String choice) {
-        String oldChoice = httpSession.getAttribute("choice").toString();
-        voteCount.put(oldChoice, voteCount.get(oldChoice) - 1);
-        voteCount.put(choice, voteCount.get(choice) + 1);
-    }
-
-    private static void addChoices(List<String> choices) {
-        synchronized (voteCount) {
-            choices.forEach(item -> {
-                voteCount.put(item, 0);
-            });
-        }
-
-    }
-
-
-
 }

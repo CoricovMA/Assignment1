@@ -39,10 +39,10 @@ public class CreateRequest extends AbstractRequest implements Request {
     public Response call() {
         try {
             poll = mapper.readValue(this.getRequest().getReader(), Poll.class);
+            poll.verifyId();
+            PollManager.createPoll(poll);
 
-            PollManager.createPoll(poll.getPollTitle(), poll.getQuestionText(), poll.getChoicesList());
-
-            return new Response().ok().body(new JSONObject("{id:" + PollManager.getPollId() + "}"));
+            return new Response().ok().body(new JSONObject().put("id", poll.getPollId()));
         } catch (IOException | SQLException | ClassNotFoundException e) {
             return new Response().badRequest().exceptionBody(e);
         }

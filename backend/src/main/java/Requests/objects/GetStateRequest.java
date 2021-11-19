@@ -4,7 +4,14 @@ import Responses.Response;
 import Users.PollManager;
 import org.json.JSONObject;
 
-public class GetStateRequest implements Request{
+import javax.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
+
+public class GetStateRequest extends AbstractRequest implements Request{
+
+    public GetStateRequest(HttpServletRequest request) {
+        super(request);
+    }
 
     /**
      * Implementation of the Create request. Creates the poll
@@ -13,6 +20,11 @@ public class GetStateRequest implements Request{
      */
     @Override
     public Response call() {
-        return new Response().ok().body(new JSONObject(PollManager.getState()));
+        try{
+            return new Response().ok().body(new JSONObject(PollManager.getState(this.getPollId())));
+        } catch (SQLException | ClassNotFoundException e) {
+            return new Response().badRequest();
+        }
+
     }
 }
