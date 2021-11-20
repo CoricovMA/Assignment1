@@ -32,8 +32,9 @@ public class VoteRequest extends AbstractRequest implements Request {
         try {
             HttpSession session = this.getHttpSession().orElseThrow(InvalidSessionException::new);
             String choice = this.getRequest().getParameter("choice");
+            String choiceId = this.getRequest().getParameter("choiceId");
             String pin = this.getRequest().getParameter("pin");
-            PollManager.vote(session, choice, pin, getPollId());
+            PollManager.vote(choiceId, choice, pin, getPollId());
             return new Response().ok();
 
         } catch (AssignmentException | SQLException | ClassNotFoundException e) {

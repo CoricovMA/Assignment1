@@ -96,19 +96,15 @@ public class PollManager {
                 "unrelease");
     }
 
-    /**
-     * This method allows the participant to vote if the Poll state is running, else, it throws an exception.
-     * @param httpSession given HttpSession from the Servlet
-     * @param choice given choice fromm the participant
-     * @throws AssignmentException
-     */
-    public synchronized static void vote(HttpSession httpSession, String choice, String pin, String pollId ) throws AssignmentException, SQLException, ClassNotFoundException {
+    public synchronized static void vote(String choiceId, String choice, String pin, String pollId ) throws AssignmentException, SQLException, ClassNotFoundException {
         if (choice.isBlank() || choice.isEmpty() || !PollManager.validateChoice(choice, pollId))
             throw new InvalidChoiceException();
 
         Poll pollToVote = MysqlJDBC.getInstance().selectPoll(pollId);
         pollToVote.checkPollState(Poll.POLL_STATUS.RUNNING, "vote");
 
+        Vote vote = new Vote(StringHelper.randomPin(), pin, choiceId);
+        MysqlJDBC.getInstance().insertVote(vote);
     }
 
     /**
