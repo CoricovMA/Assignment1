@@ -8,6 +8,7 @@ import Storage.MysqlJDBC;
 import Util.SessionManager;
 import Util.StringHelper;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
 
@@ -159,5 +160,17 @@ public class PollManager {
 
     public static Map<String, Object> getState(String pollId) throws SQLException, ClassNotFoundException {
         return MysqlJDBC.getInstance().selectPoll(pollId).getState();
+    }
+
+    public static JSONObject getAllPolls(String email) throws SQLException, ClassNotFoundException {
+        List<Poll> pollsFromUser = MysqlJDBC.getInstance().getAllPollsFromUser(email);
+        JSONObject objectToReturn = new JSONObject();
+        JSONArray arrayToPut = new JSONArray();
+        pollsFromUser.forEach(poll -> {
+            arrayToPut.put(new JSONArray().put(poll.getPollId()).put(poll.getQuestionText()));
+        });
+
+        objectToReturn.put("polls", arrayToPut);
+        return objectToReturn;
     }
 }

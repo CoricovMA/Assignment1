@@ -30,7 +30,9 @@ public class RequestFactory {
         UPDATE,
         RUN,
         STATE,
-        ACCESS
+        ACCESS,
+        POLLS,
+        AUTHENTICATE
     }
 
     /**
@@ -48,6 +50,8 @@ public class RequestFactory {
                 return new DetailsRequest(request);
             case STATE:
                 return new GetStateRequest(request);
+            case POLLS:
+                return new GetPollsRequest(request);
             default:
                 return new InvalidRequest(400);
         }
@@ -70,6 +74,8 @@ public class RequestFactory {
                 return new CreateRequest(request);
             case ACCESS:
                 return new AccessRequest(request);
+            case AUTHENTICATE:
+                return new LoginRequest(request);
             default:
                 return new InvalidRequest(400);
         }

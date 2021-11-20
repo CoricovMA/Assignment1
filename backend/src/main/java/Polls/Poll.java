@@ -5,6 +5,7 @@ import Exceptions.InvalidPollStateException;
 import Storage.Entities.Vote;
 import Storage.MysqlJDBC;
 import Util.StringHelper;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.counting;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Poll implements Serializable {
 
     public enum POLL_STATUS {
@@ -48,8 +50,10 @@ public class Poll implements Serializable {
     @JsonProperty("choices")
     private List<String> choicesList;
 
-    @JsonProperty("id")
     private String pollId;
+
+    @JsonProperty("email")
+    private String email;
 
     private POLL_STATUS pollStatus;
 
@@ -57,12 +61,13 @@ public class Poll implements Serializable {
         this.pollStatus = POLL_STATUS.CREATED;
     }
 
-    public Poll(String name, String question, List<String> choices) {
+    public Poll(String name, String question, List<String> choices, String email) {
         this.choicesList = choices;
         this.pollTitle = name;
         this.questionText = question;
         this.pollId = StringHelper.randomID();
         this.pollStatus = POLL_STATUS.CREATED;
+        this.email = email;
     }
 
     public void verifyId(){
