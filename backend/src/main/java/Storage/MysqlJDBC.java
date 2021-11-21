@@ -21,12 +21,12 @@ public class MysqlJDBC {
     private static MysqlJDBC INSTANCE;
 
     private static final String INSERT_USER_QUERY = "INSERT INTO Users (name, email, password) values (?, ?, ?)";
-    private static final String INSERT_POLL_QUERY = "INSERT INTO Polls (pollId, title, question) values (?, ?, ?)";
+    private static final String INSERT_POLL_QUERY = "INSERT INTO Polls (pollId, title, question, pollStatus) values (?, ?, ?, ?)";
     private static final String INSERT_CHOICE_QUERY = "INSERT INTO Choices (pollId, choice) values (?, ?)";
     private static final String INSERT_VOTE_QUERY = "INSERT INTO Vote (PIN, choiceId) values (?, ?)";
 
     private static final String UPDATE_USER_QUERY = "UPDATE Users SET name = ?, email = ?, password = ? WHERE userId = ?";
-    private static final String UPDATE_POLL_QUERY = "Update Polls SET title = ?, question = ? WHERE pollId = ?";
+    private static final String UPDATE_POLL_QUERY = "Update Polls SET title = ?, question = ?, pollStatus = ? WHERE pollId = ?";
     private static final String UPDATE_CHOICE_QUERY = "UPDATE Choices SET pollId = ?, choice = ? WHERE choiceId = ?";
     private static final String UPDATE_VOTE_QUERY = "UPDATE Vote SET PIN = ?, choiceId = ? WHERE voteId = ?";
 
@@ -98,6 +98,7 @@ public class MysqlJDBC {
         statement.setString(1, poll.getPollId());
         statement.setString(2, poll.getPollTitle());
         statement.setString(3, poll.getQuestionText());
+        statement.setString(4, poll.getStatus().getValue());
         statement.executeUpdate();
         statement.close();
     }
@@ -212,6 +213,7 @@ public class MysqlJDBC {
         statement.setString(1, poll.getPollTitle());
         statement.setString(2, poll.getQuestionText());
         statement.setString(3, poll.getPollId());
+        statement.setString(4, poll.getStatus().getValue());
         statement.executeUpdate();
         statement.close();
     }
